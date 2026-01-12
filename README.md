@@ -1,19 +1,13 @@
 # Imajin - Image Processor
 
-A powerful, user-friendly image processing application for compressing and converting images with an intuitive drag-and-drop interface.
-
-![Imajin Screenshot](docs/screenshot.png)
-_Screenshot placeholder - Add actual screenshot here_
+An image processing Python application for compressing and converting images with drag-and-drop interface.
 
 ## Features
 
-- ✨ **Bulk Image Compression** - Compress multiple images with adjustable quality (1-100)
-- 🔄 **Format Conversion** - Convert JPG/PNG to WebP or AVIF formats
-- 🎯 **Drag-and-Drop Interface** - Simply drag images into the window
-- 📁 **Custom Output Destination** - Choose where to save processed images
-- 🔒 **Metadata Removal** - Optionally remove EXIF data (camera info, GPS, etc.)
-- ⚡ **Background Processing** - Responsive UI with real-time progress updates
-- 💾 **Settings Persistence** - Your preferences are automatically saved
+- **Bulk Image Compression** - Compress multiple images with adjustable quality (1-100)
+- **Format Conversion** - Convert JPG/PNG to WebP or AVIF formats
+- **Drag-and-Drop Interface** - Simply drag images into the window
+- **Metadata Removal** - Optionally remove EXIF data (camera info, GPS, etc.)
 
 ## Requirements
 
@@ -129,23 +123,14 @@ Enable "Remove metadata" to:
 
 ### Tips & Best Practices
 
-1. **Test First**: Process a few images with different quality settings to find your preference
-2. **Batch Processing**: Process many images at once - the UI remains responsive
-3. **Format Choice**:
+1. **Format Choice**:
    - Use **WebP** for web publishing (wide compatibility)
    - Use **AVIF** for maximum compression (newest browsers)
    - Use **Keep Original** when format compatibility is critical
-4. **Quality Settings**:
+2. **Quality Settings**:
    - Photos for web: 80-85%
    - Professional use: 90-95%
    - Archive/storage: 70-80%
-5. **Output Organization**: Use descriptive output folder names (e.g., `./output/web-optimized`)
-
-### Keyboard Shortcuts
-
-- `Ctrl+A`: Select all images in list
-- `Delete`: Remove selected images from list
-- `Esc`: (Future) Cancel processing
 
 ### Troubleshooting
 
@@ -172,7 +157,7 @@ Enable "Remove metadata" to:
 - Ensure images aren't corrupted
 - Verify format is supported (JPG, JPEG, PNG)
 
-## Building Executable
+## Building Executable (.exe)
 
 ### Windows
 
@@ -212,20 +197,3 @@ imajin/
 ├── CHECKLIST.md            # Sprint checklist
 └── README.md               # This file
 ```
-
-## Development
-
-This project was developed in 7 sprints following agile methodology. See `DEVELOPMENT_PLAN.md` and `CHECKLIST.md` for detailed development roadmap and progress tracking.
-
-### Tech Stack
-
-- **UI Framework**: PyQt6
-- **Image Processing**: Pillow (PIL)
-- **Format Support**: pillow-avif-plugin
-- **Packaging**: PyInstaller
-
-## Acknowledgments
-
-- Built with PyQt6 and Pillow
-- AVIF support via pillow-avif-plugin
-- Inspired by the need for simple, powerful image processing
