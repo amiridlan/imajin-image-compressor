@@ -13,10 +13,10 @@ class ImageProcessorWorker(QThread):
     # Signals
     progress_updated = pyqtSignal(int)  # Progress percentage
     file_started = pyqtSignal(str)  # Current file being processed
-    file_completed = pyqtSignal(bool, str, str, dict)  # (success, filename, message, stats)
+    file_completed = pyqtSignal(bool, str, str)  # (success, filename, message)
     all_completed = pyqtSignal(int, int, list)  # (successful, failed, errors)
 
-    def __init__(self, images, output_folder, quality, remove_metadata, output_format, conflict_strategy='replace'):
+    def __init__(self, images, output_folder, quality, remove_metadata, output_format):
         """
         Initialize the worker thread.
 
@@ -26,7 +26,6 @@ class ImageProcessorWorker(QThread):
             quality: Compression/conversion quality (1-100)
             remove_metadata: Whether to remove EXIF metadata
             output_format: Output format ('Keep Original', 'WebP', 'AVIF')
-            conflict_strategy: How to handle existing files ('replace', 'skip', 'auto_rename')
         """
         super().__init__()
         self.images = images
@@ -34,7 +33,6 @@ class ImageProcessorWorker(QThread):
         self.quality = validate_quality(quality)
         self.remove_metadata = remove_metadata
         self.output_format = output_format
-        self.conflict_strategy = conflict_strategy
         self.is_cancelled = False
 
     def run(self):
@@ -57,27 +55,8 @@ class ImageProcessorWorker(QThread):
             # Emit signal that we're starting this file
             self.file_started.emit(file_name)
 
-            # Get original file size
-            try:
-                original_size = os.path.getsize(input_path)
-            except:
-                original_size = 0
-
             # Generate output filename
             output_path = os.path.join(self.output_folder, file_name)
-
-            # Handle file conflicts
-            output_path = self._handle_conflict(output_path)
-
-            if output_path is None:
-                # Skip this file
-                stats = {
-                    'original_size': original_size,
-                    'new_size': 0,
-                    'reduction': 0.0
-                }
-                self.file_completed.emit(None, file_name, "Skipped (file exists)", stats)
-                continue
 
             # Process based on selected format
             try:
@@ -97,25 +76,6 @@ class ImageProcessorWorker(QThread):
                     message = f"Unsupported format: {self.output_format}"
                     reduction = 0.0
 
-                # Get new file size
-                try:
-                    new_size = os.path.getsize(output_path) if os.path.exists(output_path) else 0
-                except:
-                    new_size = 0
-
-                # Calculate actual reduction percentage
-                if original_size > 0 and new_size > 0:
-                    actual_reduction = ((original_size - new_size) / original_size) * 100
-                else:
-                    actual_reduction = reduction
-
-                # Create stats dict
-                stats = {
-                    'original_size': original_size,
-                    'new_size': new_size,
-                    'reduction': actual_reduction
-                }
-
                 # Track results
                 if success:
                     successful += 1
@@ -123,21 +83,15 @@ class ImageProcessorWorker(QThread):
                     failed += 1
                     errors.append(f"{file_name}: {message}")
 
-                # Emit completion signal for this file with stats
-                self.file_completed.emit(success, file_name, message, stats)
+                # Emit completion signal for this file
+                self.file_completed.emit(success, file_name, message)
 
             except Exception as e:
                 # Handle unexpected errors
                 failed += 1
                 error_msg = f"Unexpected error: {str(e)}"
                 errors.append(f"{file_name}: {error_msg}")
-
-                stats = {
-                    'original_size': original_size,
-                    'new_size': 0,
-                    'reduction': 0.0
-                }
-                self.file_completed.emit(False, file_name, error_msg, stats)
+                self.file_completed.emit(False, file_name, error_msg)
 
             # Update progress
             progress = int(((idx + 1) / total_images) * 100)
@@ -145,44 +99,6 @@ class ImageProcessorWorker(QThread):
 
         # Emit completion signal with final statistics
         self.all_completed.emit(successful, failed, errors)
-
-    def _handle_conflict(self, output_path):
-        """
-        Handle file conflicts based on strategy
-
-        Args:
-            output_path: Proposed output file path
-
-        Returns:
-            Final output path, or None to skip file
-        """
-        if not os.path.exists(output_path):
-            return output_path
-
-        if self.conflict_strategy == 'skip':
-            return None
-        elif self.conflict_strategy == 'auto_rename':
-            return self._get_unique_filename(output_path)
-        else:  # 'replace'
-            return output_path
-
-    def _get_unique_filename(self, filepath):
-        """
-        Generate unique filename by appending number
-
-        Args:
-            filepath: Original file path
-
-        Returns:
-            Unique file path
-        """
-        base, ext = os.path.splitext(filepath)
-        counter = 1
-
-        while os.path.exists(f"{base}_{counter}{ext}"):
-            counter += 1
-
-        return f"{base}_{counter}{ext}"
 
     def cancel(self):
         """
