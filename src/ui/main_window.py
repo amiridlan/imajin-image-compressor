@@ -1,16 +1,16 @@
 import os
 import json
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                              QPushButton, QListWidget, QListWidgetItem, QLabel,
-                              QFileDialog, QLineEdit, QCheckBox, QGroupBox,
-                              QSlider, QProgressBar, QMessageBox, QComboBox)
+                              QListWidget, QListWidgetItem, QLabel,
+                              QFileDialog, QLineEdit, QCheckBox,
+                              QProgressBar, QMessageBox, QComboBox,
+                              QFrame, QSizePolicy)
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtGui import QFont, QKeySequence
+from PyQt6.QtGui import QFont, QFontDatabase
 from core.compressor import validate_quality
 from core.converter import get_supported_formats
 from core.worker import ImageProcessorWorker
 from core.conflict_checker import check_conflicts
-from ui.components.card_widget import CardWidget
 from ui.components.animated_button import AnimatedButton, PrimaryButton, DangerButton
 from ui.components.quality_presets import QualityPresetsWidget
 from ui.components.processing_log import ProcessingLog
@@ -18,86 +18,94 @@ from ui.dialogs.conflict_dialog import ConflictDialog
 from ui.styles.theme import Theme
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Image Processor")
-        self.setMinimumSize(QSize(800, 600))
+        self.setWindowTitle("Imajin")
+        self.setMinimumSize(QSize(920, 640))
 
-        # Color palette
-        self.colors = {
-            'bg_primary': '#F3F0FF',    # 60% - Light purple (background)
-            'bg_secondary': '#E0D7FF',   # 30% - Medium purple (UI elements)
-            'accent': '#CBE67C',         # 10% - Lime green (highlights)
-            'text': '#352E52'            # Dark purple (text)
-        }
-
-        # Supported image formats
         self.supported_formats = ('.jpg', '.jpeg', '.png')
-
-        # Default settings
         self.default_output_folder = './output'
         self.config_file = 'config.json'
-
-        # Worker thread
         self.worker = None
 
-        # Apply global styling
+        self._load_fonts()
         self.apply_global_style()
-
-        # Initialize UI
         self.init_ui()
-
-        # Load saved settings
         self.load_settings()
-
-        # Enable drag and drop
         self.setAcceptDrops(True)
 
+    def _load_fonts(self):
+        fonts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 '..', 'assets', 'fonts')
+        for fname in ('SpaceGrotesk-Regular.ttf',
+                      'SpaceGrotesk-Medium.ttf',
+                      'SpaceGrotesk-Bold.ttf'):
+            path = os.path.normpath(os.path.join(fonts_dir, fname))
+            if os.path.exists(path):
+                QFontDatabase.addApplicationFont(path)
+
     def apply_global_style(self):
-        """Apply global styling with VCR OSD Mono font and color palette"""
-        # Set global font
-        font = QFont("VCR OSD Mono", 10)
+        font = QFont("Space Grotesk", 10)
         self.setFont(font)
 
-        # Apply global stylesheet
         self.setStyleSheet(f"""
             QMainWindow {{
-                background-color: {self.colors['bg_primary']};
-                color: {self.colors['text']};
-                font-family: 'VCR OSD Mono';
+                background-color: {Theme.BG_PRIMARY};
+                color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
             }}
 
             QWidget {{
-                background-color: {self.colors['bg_primary']};
-                color: {self.colors['text']};
-                font-family: 'VCR OSD Mono';
+                background-color: {Theme.BG_PRIMARY};
+                color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
             }}
 
             QLabel {{
-                color: {self.colors['text']};
-                font-family: 'VCR OSD Mono';
+                color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
+                background-color: transparent;
+            }}
+
+            QCheckBox {{
+                color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
+                spacing: 8px;
+                background-color: transparent;
+            }}
+
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                border: 2px solid {Theme.TEXT};
+                border-radius: 3px;
+                background-color: white;
+            }}
+
+            QCheckBox::indicator:checked {{
+                background-color: {Theme.ACCENT};
+                border: 2px solid {Theme.TEXT};
             }}
 
             QPushButton {{
-                background-color: {self.colors['bg_secondary']};
-                color: {self.colors['text']};
-                border: 2px solid {self.colors['text']};
+                background-color: {Theme.BG_SECONDARY};
+                color: {Theme.TEXT};
+                border: 2px solid {Theme.TEXT};
                 border-radius: 5px;
                 padding: 8px 16px;
-                font-family: 'VCR OSD Mono';
+                font-family: 'Space Grotesk';
                 font-weight: bold;
             }}
 
             QPushButton:hover {{
-                background-color: {self.colors['accent']};
-                color: {self.colors['text']};
+                background-color: {Theme.ACCENT};
+                color: {Theme.TEXT};
             }}
 
             QPushButton:pressed {{
-                background-color: {self.colors['text']};
-                color: {self.colors['bg_primary']};
+                background-color: {Theme.TEXT};
+                color: {Theme.BG_PRIMARY};
             }}
 
             QPushButton:disabled {{
@@ -108,81 +116,52 @@ class MainWindow(QMainWindow):
 
             QLineEdit {{
                 background-color: white;
-                color: {self.colors['text']};
-                border: 2px solid {self.colors['bg_secondary']};
+                color: {Theme.TEXT};
+                border: 2px solid {Theme.BG_SECONDARY};
                 border-radius: 3px;
                 padding: 5px;
-                font-family: 'VCR OSD Mono';
+                font-family: 'Space Grotesk';
             }}
 
             QLineEdit:focus {{
-                border: 2px solid {self.colors['accent']};
+                border: 2px solid {Theme.ACCENT};
             }}
 
             QListWidget {{
                 background-color: white;
-                color: {self.colors['text']};
-                border: 2px solid {self.colors['bg_secondary']};
+                color: {Theme.TEXT};
+                border: 2px solid {Theme.BG_SECONDARY};
                 border-radius: 5px;
-                font-family: 'VCR OSD Mono';
+                font-family: 'Space Grotesk';
+            }}
+
+            QListWidget::item {{
+                padding: 4px 8px;
+                border-left: 3px solid transparent;
             }}
 
             QListWidget::item:selected {{
-                background-color: {self.colors['bg_secondary']};
-                color: {self.colors['text']};
+                background-color: {Theme.BG_SECONDARY};
+                color: {Theme.TEXT};
+                border-left: 3px solid {Theme.ACCENT};
             }}
 
             QListWidget::item:hover {{
-                background-color: {self.colors['bg_primary']};
-            }}
-
-            QGroupBox {{
-                background-color: {self.colors['bg_secondary']};
-                border: 2px solid {self.colors['text']};
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 15px;
-                font-family: 'VCR OSD Mono';
-                font-weight: bold;
-            }}
-
-            QGroupBox::title {{
-                color: {self.colors['text']};
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }}
-
-            QCheckBox {{
-                color: {self.colors['text']};
-                font-family: 'VCR OSD Mono';
-                spacing: 8px;
-            }}
-
-            QCheckBox::indicator {{
-                width: 18px;
-                height: 18px;
-                border: 2px solid {self.colors['text']};
-                border-radius: 3px;
-                background-color: white;
-            }}
-
-            QCheckBox::indicator:checked {{
-                background-color: {self.colors['accent']};
-                border: 2px solid {self.colors['text']};
+                background-color: {Theme.BG_PRIMARY};
+                border-left: 3px solid {Theme.ACCENT};
             }}
 
             QComboBox {{
                 background-color: white;
-                color: {self.colors['text']};
-                border: 2px solid {self.colors['bg_secondary']};
+                color: {Theme.TEXT};
+                border: 2px solid {Theme.BG_SECONDARY};
                 border-radius: 3px;
                 padding: 5px;
-                font-family: 'VCR OSD Mono';
+                font-family: 'Space Grotesk';
             }}
 
             QComboBox:hover {{
-                border: 2px solid {self.colors['accent']};
+                border: 2px solid {Theme.ACCENT};
             }}
 
             QComboBox::drop-down {{
@@ -194,27 +173,27 @@ class MainWindow(QMainWindow):
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 5px solid {self.colors['text']};
+                border-top: 5px solid {Theme.TEXT};
                 margin-right: 5px;
             }}
 
             QComboBox QAbstractItemView {{
                 background-color: white;
-                color: {self.colors['text']};
-                selection-background-color: {self.colors['bg_secondary']};
-                border: 2px solid {self.colors['text']};
-                font-family: 'VCR OSD Mono';
+                color: {Theme.TEXT};
+                selection-background-color: {Theme.BG_SECONDARY};
+                border: 2px solid {Theme.TEXT};
+                font-family: 'Space Grotesk';
             }}
 
             QSlider::groove:horizontal {{
-                background: {self.colors['bg_secondary']};
+                background: {Theme.BG_SECONDARY};
                 height: 8px;
                 border-radius: 4px;
             }}
 
             QSlider::handle:horizontal {{
-                background: {self.colors['accent']};
-                border: 2px solid {self.colors['text']};
+                background: {Theme.ACCENT};
+                border: 2px solid {Theme.TEXT};
                 width: 18px;
                 height: 18px;
                 margin: -7px 0;
@@ -222,196 +201,355 @@ class MainWindow(QMainWindow):
             }}
 
             QSlider::handle:horizontal:hover {{
-                background: {self.colors['text']};
+                background: {Theme.TEXT};
             }}
 
             QProgressBar {{
-                background-color: {self.colors['bg_secondary']};
-                border: 2px solid {self.colors['text']};
+                background-color: {Theme.BG_SECONDARY};
+                border: 2px solid {Theme.TEXT};
                 border-radius: 5px;
                 text-align: center;
-                color: {self.colors['text']};
-                font-family: 'VCR OSD Mono';
+                color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
                 font-weight: bold;
             }}
 
             QProgressBar::chunk {{
-                background-color: {self.colors['accent']};
+                background-color: {Theme.ACCENT};
                 border-radius: 3px;
             }}
 
             QMessageBox {{
-                background-color: {self.colors['bg_primary']};
-                color: {self.colors['text']};
-                font-family: 'VCR OSD Mono';
+                background-color: {Theme.BG_PRIMARY};
+                color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
             }}
 
             QMessageBox QPushButton {{
                 min-width: 80px;
             }}
+
+            /* Right panel and all its QWidget descendants */
+            #rightPanel {{
+                background-color: {Theme.BG_SECONDARY};
+                border-left: 2px solid {Theme.TEXT};
+            }}
+
+            #rightPanel QWidget {{
+                background-color: {Theme.BG_SECONDARY};
+            }}
+
+            /* Override specific widgets that need non-secondary backgrounds */
+            #rightPanel QLabel {{
+                background-color: transparent;
+            }}
+
+            #rightPanel QCheckBox {{
+                background-color: transparent;
+            }}
+
+            #rightPanel QLineEdit {{
+                background-color: white;
+            }}
+
+            #rightPanel QComboBox {{
+                background-color: white;
+            }}
+
+            #rightPanel QTextEdit {{
+                background-color: white;
+            }}
         """)
+
+    def _section_label(self, text):
+        label = QLabel(text)
+        label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT};
+                font-size: 9px;
+                font-weight: bold;
+                font-family: 'Space Grotesk';
+                background-color: {Theme.ACCENT};
+                border: none;
+                padding: 2px 6px;
+                border-radius: 3px;
+            }}
+        """)
+        label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        return label
 
     def init_ui(self):
-        """Initialize the user interface"""
-        # Central widget and main layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
-        main_layout.setSpacing(10)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        root_layout = QVBoxLayout(central_widget)
+        root_layout.setSpacing(0)
+        root_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Title label
-        title_label = QLabel("Drop images here or click 'Add Images'")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet(f"""
-            font-size: 16px;
-            padding: 20px;
-            background-color: {self.colors['bg_secondary']};
-            border: 2px solid {self.colors['text']};
-            border-radius: 5px;
-            color: {self.colors['text']};
-            font-weight: bold;
+        root_layout.addWidget(self._build_header())
+
+        body = QWidget()
+        body_layout = QHBoxLayout(body)
+        body_layout.setSpacing(0)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.addWidget(self._build_left_panel(), 55)
+        body_layout.addWidget(self._build_right_panel(), 45)
+        root_layout.addWidget(body, 1)
+
+    def _build_header(self):
+        header = QWidget()
+        header.setObjectName("headerBar")
+        header.setFixedHeight(48)
+        header.setStyleSheet(f"""
+            QWidget#headerBar {{
+                background-color: {Theme.TEXT};
+                border: none;
+            }}
         """)
-        main_layout.addWidget(title_label)
 
-        # Image list widget with checkboxes
+        layout = QHBoxLayout(header)
+        layout.setContentsMargins(16, 0, 16, 0)
+
+        title = QLabel("IMAJIN IMAGE PROCESSOR")
+        title.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.ACCENT};
+                font-size: 16px;
+                font-weight: bold;
+                font-family: '{Theme.FONT_DISPLAY}';
+                background-color: transparent;
+            }}
+        """)
+
+        self.status_label = QLabel("READY_")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.status_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.BG_SECONDARY};
+                font-size: 9px;
+                font-family: '{Theme.FONT_DISPLAY}';
+                background-color: transparent;
+            }}
+        """)
+
+        layout.addWidget(title)
+        layout.addStretch()
+        layout.addWidget(self.status_label)
+
+        return header
+
+    def _build_left_panel(self):
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setSpacing(8)
+        layout.setContentsMargins(16, 16, 8, 16)
+
+        layout.addWidget(self._build_drop_zone())
+        layout.addWidget(self._build_list_toolbar())
+
         self.image_list = QListWidget()
         self.image_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.image_list.setToolTip("List of images to process. Check/uncheck items to include/exclude them.")
-        main_layout.addWidget(self.image_list)
+        layout.addWidget(self.image_list, 1)
 
-        # Button layout
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(10)
+        return panel
 
-        # Add Images button
-        self.add_button = AnimatedButton("Add Images", icon_name="fa5s.folder-plus")
+    def _build_drop_zone(self):
+        frame = QFrame()
+        frame.setFixedHeight(72)
+        frame.setStyleSheet(f"""
+            QFrame {{
+                border: 2px dashed {Theme.TEXT};
+                border-radius: {Theme.RADIUS_LG}px;
+                background-color: transparent;
+            }}
+        """)
+
+        layout = QHBoxLayout(frame)
+        layout.setContentsMargins(16, 0, 16, 0)
+        layout.setSpacing(12)
+
+        drop_label = QLabel("⬇  DROP IMAGES HERE")
+        drop_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT};
+                font-size: 12px;
+                font-weight: bold;
+                font-family: 'Space Grotesk';
+                background-color: transparent;
+                border: none;
+            }}
+        """)
+
+        or_label = QLabel("or")
+        or_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT};
+                font-size: 10px;
+                font-family: 'Space Grotesk';
+                background-color: transparent;
+                border: none;
+            }}
+        """)
+
+        self.add_button = AnimatedButton("+ ADD FILES", icon_name="fa5s.folder-plus")
         self.add_button.clicked.connect(self.add_images)
-        self.add_button.setToolTip("Select images from your computer to add to the list (Ctrl+O)")
-        button_layout.addWidget(self.add_button)
+        self.add_button.setToolTip("Select images from your computer (Ctrl+O)")
 
-        # Remove Selected button
-        self.remove_button = AnimatedButton("Remove Selected", icon_name="fa5s.trash-alt")
+        layout.addStretch()
+        layout.addWidget(drop_label)
+        layout.addWidget(or_label)
+        layout.addWidget(self.add_button)
+        layout.addStretch()
+
+        return frame
+
+    def _build_list_toolbar(self):
+        toolbar = QWidget()
+        toolbar.setStyleSheet("QWidget { background-color: transparent; }")
+        layout = QHBoxLayout(toolbar)
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.setSpacing(8)
+
+        self.file_count_label = QLabel("FILES (0)")
+        self.file_count_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT};
+                font-size: 10px;
+                font-weight: bold;
+                font-family: 'Space Grotesk';
+                background-color: transparent;
+                border: none;
+            }}
+        """)
+
+        self.remove_button = AnimatedButton("remove", icon_name="fa5s.trash-alt")
         self.remove_button.clicked.connect(self.remove_selected)
-        self.remove_button.setToolTip("Remove the selected images from the list (Delete)")
-        button_layout.addWidget(self.remove_button)
+        self.remove_button.setToolTip("Remove selected images (Delete)")
 
-        # Clear All button
-        self.clear_button = AnimatedButton("Clear All", icon_name="fa5s.broom")
+        self.clear_button = AnimatedButton("clear all", icon_name="fa5s.broom")
         self.clear_button.clicked.connect(self.clear_all)
-        self.clear_button.setToolTip("Remove all images from the list (Ctrl+Shift+C)")
-        button_layout.addWidget(self.clear_button)
+        self.clear_button.setToolTip("Clear all images (Ctrl+Shift+C)")
 
-        main_layout.addLayout(button_layout)
+        layout.addWidget(self.file_count_label)
+        layout.addStretch()
+        layout.addWidget(self.remove_button)
+        layout.addWidget(self.clear_button)
 
-        # Settings section
-        settings_card = CardWidget("Settings", collapsible=False)
-        settings_layout = QVBoxLayout()
-        settings_layout.setSpacing(15)
+        return toolbar
 
-        # Output folder section
-        output_folder_layout = QHBoxLayout()
-        output_folder_label = QLabel("Output Folder:")
+    def _build_right_panel(self):
+        panel = QWidget()
+        panel.setObjectName("rightPanel")
+
+        layout = QVBoxLayout(panel)
+        layout.setSpacing(8)
+        layout.setContentsMargins(12, 16, 16, 16)
+
+        # // OUTPUT //
+        layout.addWidget(self._section_label("// OUTPUT //"))
+
+        output_row = QHBoxLayout()
         self.output_folder_input = QLineEdit()
         self.output_folder_input.setText(self.default_output_folder)
         self.output_folder_input.setPlaceholderText("Select output folder...")
         self.output_folder_input.setToolTip("Folder where processed images will be saved")
 
-        self.browse_button = AnimatedButton("Browse", icon_name="fa5s.folder-open")
+        self.browse_button = AnimatedButton("browse", icon_name="fa5s.folder-open")
         self.browse_button.clicked.connect(self.browse_output_folder)
-        self.browse_button.setToolTip("Select a folder for saving processed images")
+        self.browse_button.setToolTip("Select output folder")
 
-        output_folder_layout.addWidget(output_folder_label)
-        output_folder_layout.addWidget(self.output_folder_input)
-        output_folder_layout.addWidget(self.browse_button)
+        output_row.addWidget(self.output_folder_input, 1)
+        output_row.addWidget(self.browse_button)
+        layout.addLayout(output_row)
 
-        settings_layout.addLayout(output_folder_layout)
+        format_row = QHBoxLayout()
+        format_label = QLabel("FORMAT:")
+        self.format_selector = QComboBox()
+        self.format_selector.addItems(get_supported_formats())
+        self.format_selector.setCurrentIndex(0)
+        self.format_selector.currentIndexChanged.connect(self.on_format_changed)
+        self.format_selector.setToolTip("Choose output format: Keep Original, WebP, or AVIF")
+        self.format_selector.view().setStyleSheet(f"""
+            QAbstractItemView {{
+                background-color: white;
+                color: {Theme.TEXT};
+                border: 2px solid {Theme.TEXT};
+                selection-background-color: {Theme.BG_SECONDARY};
+                selection-color: {Theme.TEXT};
+                font-family: 'Space Grotesk';
+                padding: 2px;
+                outline: none;
+            }}
+        """)
 
-        # Metadata removal checkbox
-        self.remove_metadata_checkbox = QCheckBox("Remove metadata (EXIF)")
+        format_row.addWidget(format_label)
+        format_row.addWidget(self.format_selector, 1)
+        layout.addLayout(format_row)
+
+        layout.addSpacing(8)
+
+        # // QUALITY //
+        layout.addWidget(self._section_label("// QUALITY //"))
+        self.quality_presets = QualityPresetsWidget()
+        layout.addWidget(self.quality_presets)
+
+        layout.addSpacing(8)
+
+        # // OPTIONS //
+        layout.addWidget(self._section_label("// OPTIONS //"))
+        self.remove_metadata_checkbox = QCheckBox("Strip EXIF metadata")
         self.remove_metadata_checkbox.setChecked(False)
         self.remove_metadata_checkbox.stateChanged.connect(self.save_settings)
         self.remove_metadata_checkbox.setToolTip("Remove EXIF metadata (camera info, GPS, etc.) from images")
-        settings_layout.addWidget(self.remove_metadata_checkbox)
+        layout.addWidget(self.remove_metadata_checkbox)
 
-        # Format selector
-        format_layout = QHBoxLayout()
-        format_label = QLabel("Output Format:")
-        self.format_selector = QComboBox()
-        self.format_selector.addItems(get_supported_formats())
-        self.format_selector.setCurrentIndex(0)  # Default to "Keep Original"
-        self.format_selector.currentIndexChanged.connect(self.on_format_changed)
-        self.format_selector.setToolTip("Choose output format: Keep Original, WebP (smaller), or AVIF (smallest)")
+        layout.addSpacing(8)
+        divider = QFrame()
+        divider.setFixedHeight(2)
+        divider.setStyleSheet(f"background-color: {Theme.TEXT}; border: none;")
+        layout.addWidget(divider)
+        layout.addSpacing(8)
 
-        format_layout.addWidget(format_label)
-        format_layout.addWidget(self.format_selector)
-        format_layout.addStretch()
+        layout.addStretch()
 
-        settings_layout.addLayout(format_layout)
+        # // PROCESSING //
+        layout.addWidget(self._section_label("// PROCESSING //"))
 
-        # Compression quality presets
-        self.quality_presets = QualityPresetsWidget()
-        settings_layout.addWidget(self.quality_presets)
-
-        settings_card.add_layout(settings_layout)
-        main_layout.addWidget(settings_card)
-
-        # Processing section
-        processing_layout = QVBoxLayout()
-        processing_layout.setSpacing(10)
-
-        # Processing buttons layout
-        processing_buttons_layout = QHBoxLayout()
-        processing_buttons_layout.setSpacing(10)
-
-        # Start Processing button
-        self.process_button = PrimaryButton("Start Processing", icon_name="fa5s.play-circle")
+        self.process_button = PrimaryButton("START PROCESSING", icon_name="fa5s.play-circle")
+        self.process_button.setMinimumHeight(48)
+        self.process_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.process_button.clicked.connect(self.start_processing)
-        self.process_button.setToolTip("Process all checked images with the selected settings (F5)")
-        processing_buttons_layout.addWidget(self.process_button)
+        self.process_button.setToolTip("Process all checked images (F5)")
+        layout.addWidget(self.process_button)
 
-        # Cancel button (initially hidden)
-        self.cancel_button = DangerButton("Cancel", icon_name="fa5s.stop-circle")
+        self.cancel_button = DangerButton("CANCEL", icon_name="fa5s.stop-circle")
         self.cancel_button.clicked.connect(self.cancel_processing)
         self.cancel_button.setToolTip("Cancel processing (Escape)")
         self.cancel_button.setVisible(False)
-        processing_buttons_layout.addWidget(self.cancel_button)
+        layout.addWidget(self.cancel_button)
 
-        processing_layout.addLayout(processing_buttons_layout)
-
-        # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(False)
         self.progress_bar.setToolTip("Processing progress")
-        processing_layout.addWidget(self.progress_bar)
+        layout.addWidget(self.progress_bar)
 
-        # Processing log (initially hidden)
         self.processing_log = ProcessingLog()
         self.processing_log.setVisible(False)
-        processing_layout.addWidget(self.processing_log)
+        layout.addWidget(self.processing_log)
 
-        main_layout.addLayout(processing_layout)
-
-        # Status label
-        self.status_label = QLabel("No images loaded")
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setStyleSheet("padding: 10px;")
-        main_layout.addWidget(self.status_label)
+        return panel
 
     def dragEnterEvent(self, event):
-        """Handle drag enter event"""
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
 
     def dropEvent(self, event):
-        """Handle drop event"""
         files = [url.toLocalFile() for url in event.mimeData().urls()]
         valid_files = self.validate_files(files)
         self.add_files_to_list(valid_files)
 
     def validate_files(self, files):
-        """Validate file formats and return only supported image files"""
         valid_files = []
         invalid_count = 0
 
@@ -424,32 +562,28 @@ class MainWindow(QMainWindow):
 
         if invalid_count > 0:
             self.status_label.setText(
-                f"Added {len(valid_files)} images, skipped {invalid_count} unsupported files"
+                f"SKIPPED {invalid_count} UNSUPPORTED_"
             )
 
         return valid_files
 
     def add_files_to_list(self, file_paths):
-        """Add validated files to the list widget"""
         for file_path in file_paths:
-            # Check if file already exists in list
             if not self.file_exists_in_list(file_path):
                 file_name = os.path.basename(file_path)
                 file_size = os.path.getsize(file_path)
-                file_size_mb = file_size / (1024 * 1024)  # Convert to MB
+                file_size_mb = file_size / (1024 * 1024)
 
-                # Create list item with checkbox
                 item = QListWidgetItem(f"{file_name} ({file_size_mb:.2f} MB)")
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(Qt.CheckState.Checked)
-                item.setData(Qt.ItemDataRole.UserRole, file_path)  # Store full path
+                item.setData(Qt.ItemDataRole.UserRole, file_path)
 
                 self.image_list.addItem(item)
 
         self.update_status()
 
     def file_exists_in_list(self, file_path):
-        """Check if a file already exists in the list"""
         for i in range(self.image_list.count()):
             item = self.image_list.item(i)
             if item.data(Qt.ItemDataRole.UserRole) == file_path:
@@ -457,7 +591,6 @@ class MainWindow(QMainWindow):
         return False
 
     def add_images(self):
-        """Open file dialog to select images"""
         file_dialog = QFileDialog(self)
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         file_dialog.setNameFilter("Images (*.jpg *.jpeg *.png)")
@@ -468,11 +601,10 @@ class MainWindow(QMainWindow):
             self.add_files_to_list(valid_files)
 
     def remove_selected(self):
-        """Remove selected items from the list"""
         selected_items = self.image_list.selectedItems()
 
         if not selected_items:
-            self.status_label.setText("No items selected")
+            self.status_label.setText("NO ITEMS SELECTED_")
             return
 
         for item in selected_items:
@@ -481,22 +613,22 @@ class MainWindow(QMainWindow):
         self.update_status()
 
     def clear_all(self):
-        """Clear all items from the list"""
         self.image_list.clear()
         self.update_status()
 
     def update_status(self):
-        """Update the status label with current image count"""
         count = self.image_list.count()
         if count == 0:
-            self.status_label.setText("No images loaded")
+            self.status_label.setText("READY_")
+            self.file_count_label.setText("FILES (0)")
         elif count == 1:
-            self.status_label.setText("1 image loaded")
+            self.status_label.setText("1 FILE LOADED_")
+            self.file_count_label.setText("FILES (1)")
         else:
-            self.status_label.setText(f"{count} images loaded")
+            self.status_label.setText(f"{count} FILES LOADED_")
+            self.file_count_label.setText(f"FILES ({count})")
 
     def browse_output_folder(self):
-        """Open folder dialog to select output directory"""
         folder_dialog = QFileDialog(self)
         folder_dialog.setFileMode(QFileDialog.FileMode.Directory)
 
@@ -510,7 +642,6 @@ class MainWindow(QMainWindow):
             self.save_settings()
 
     def load_settings(self):
-        """Load settings from config file"""
         if os.path.exists(self.config_file):
             try:
                 with open(self.config_file, 'r') as f:
@@ -525,7 +656,6 @@ class MainWindow(QMainWindow):
                 print(f"Error loading settings: {e}")
 
     def save_settings(self):
-        """Save settings to config file"""
         try:
             config = {
                 'output_folder': self.output_folder_input.text(),
@@ -536,39 +666,25 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"Error saving settings: {e}")
 
-    def update_quality_label(self):
-        """Update the quality label when slider value changes (legacy method - now handled by QualityPresetsWidget)"""
-        # This method is kept for compatibility but is no longer used
-        pass
-
     def on_format_changed(self):
-        """Handle format selector change"""
-        selected_format = self.format_selector.currentText()
-        # You could add logic here to show/hide certain options based on format
-        # For example, different quality settings for different formats
         pass
 
     def start_processing(self):
-        """Start processing selected images using worker thread"""
-        # Get output folder
         output_folder = self.output_folder_input.text()
 
-        # Validate output folder
         if not output_folder:
             QMessageBox.warning(self, "No Output Folder",
-                              "Please select an output folder.")
+                                "Please select an output folder.")
             return
 
-        # Create output folder if it doesn't exist
         if not os.path.exists(output_folder):
             try:
                 os.makedirs(output_folder)
             except Exception as e:
                 QMessageBox.critical(self, "Error",
-                                   f"Could not create output folder: {str(e)}")
+                                     f"Could not create output folder: {str(e)}")
                 return
 
-        # Get checked images
         images_to_process = []
         for i in range(self.image_list.count()):
             item = self.image_list.item(i)
@@ -578,28 +694,22 @@ class MainWindow(QMainWindow):
 
         if not images_to_process:
             QMessageBox.warning(self, "No Images Selected",
-                              "Please check at least one image to process.")
+                                "Please check at least one image to process.")
             return
 
-        # Get settings
         quality = validate_quality(self.quality_presets.get_value())
         remove_metadata = self.remove_metadata_checkbox.isChecked()
         selected_format = self.format_selector.currentText()
 
-        # Disable UI during processing
         self.process_button.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-
-        # Show cancel button
         self.cancel_button.setVisible(True)
         self.cancel_button.setEnabled(True)
 
-        # Show and clear processing log
         self.processing_log.clear_log()
         self.processing_log.setVisible(True)
 
-        # Create and configure worker thread
         self.worker = ImageProcessorWorker(
             images_to_process,
             output_folder,
@@ -608,21 +718,17 @@ class MainWindow(QMainWindow):
             selected_format
         )
 
-        # Connect signals
         self.worker.progress_updated.connect(self.on_progress_updated)
         self.worker.file_started.connect(self.on_file_started)
         self.worker.file_completed.connect(self.on_file_completed)
         self.worker.all_completed.connect(self.on_all_completed)
 
-        # Start the worker thread
         self.worker.start()
 
     def on_progress_updated(self, progress):
-        """Handle progress update signal from worker"""
         self.progress_bar.setValue(progress)
 
     def cancel_processing(self):
-        """Cancel the current processing operation"""
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(
                 self,
@@ -634,34 +740,27 @@ class MainWindow(QMainWindow):
 
             if reply == QMessageBox.StandardButton.Yes:
                 self.worker.cancel()
-                self.status_label.setText("Cancelling processing...")
+                self.status_label.setText("CANCELLING...")
                 self.cancel_button.setEnabled(False)
 
     def on_file_started(self, filename):
-        """Handle file started signal from worker"""
-        self.status_label.setText(f"Processing: {filename}")
+        truncated = filename[:18] + "..." if len(filename) > 18 else filename
+        self.status_label.setText(f"PROCESSING: {truncated}_")
 
     def on_file_completed(self, success, filename, message, stats=None):
-        """Handle file completed signal from worker"""
-        # Add entry to processing log
         self.processing_log.add_entry(success, filename, message, stats)
 
     def on_all_completed(self, successful, failed, errors):
-        """Handle all completed signal from worker"""
-        # Re-enable UI
         self.process_button.setEnabled(True)
         self.progress_bar.setVisible(False)
-
-        # Hide cancel button
         self.cancel_button.setVisible(False)
 
-        # Show completion message
-        result_message = f"Processing complete!\n\n"
+        result_message = "Processing complete!\n\n"
         result_message += f"Successfully processed: {successful}\n"
         result_message += f"Failed: {failed}\n"
 
         if errors:
-            result_message += f"\nErrors:\n" + "\n".join(errors[:5])
+            result_message += "\nErrors:\n" + "\n".join(errors[:5])
             if len(errors) > 5:
                 result_message += f"\n... and {len(errors) - 5} more errors"
 
@@ -670,14 +769,10 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.information(self, "Processing Complete", result_message)
 
-        self.status_label.setText(f"{successful} images processed successfully")
-
-        # Clean up worker
+        self.status_label.setText(f"{successful} PROCESSED_")
         self.worker = None
 
     def closeEvent(self, event):
-        """Save settings when window is closed and handle active processing"""
-        # Check if worker is still processing
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(
                 self,
@@ -688,9 +783,8 @@ class MainWindow(QMainWindow):
             )
 
             if reply == QMessageBox.StandardButton.Yes:
-                # Cancel the worker
                 self.worker.cancel()
-                self.worker.wait()  # Wait for thread to finish
+                self.worker.wait()
                 self.save_settings()
                 event.accept()
             else:

@@ -30,7 +30,8 @@ class Theme:
     DISABLED_BORDER = '#999999'
 
     # Typography
-    FONT_FAMILY = 'VCR OSD Mono'
+    FONT_FAMILY = 'Space Grotesk'
+    FONT_DISPLAY = 'VCR OSD Mono'
     FONT_SIZE_SMALL = 9
     FONT_SIZE_NORMAL = 10
     FONT_SIZE_LARGE = 14
