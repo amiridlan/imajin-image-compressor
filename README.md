@@ -1,6 +1,6 @@
 # Imajin v2.0 — Multi-Purpose Toolkit
 
-A Windows desktop application built with PyQt6. Convert images, transform PDFs, and scan QR codes for malware — all from a single hub.
+A Windows desktop application built with PyQt6, styled with a **Synthwave Drive** dark theme (hot pink / deep purple). Convert images, transform PDFs, and scan QR codes for malware — all from a single hub.
 
 ## Features
 
@@ -51,7 +51,7 @@ python src/main.py
 | PyQt6 >= 6.6.0 | GUI framework |
 | Pillow >= 10.0.0 | Image processing |
 | pillow-avif-plugin >= 1.4.0 | AVIF format support |
-| qtawesome >= 1.3.0 | FontAwesome icons |
+| qtawesome >= 1.2.3 | FontAwesome icons |
 | opencv-python >= 4.8.0 | Camera capture & frame processing |
 | pyzbar >= 0.1.9 | QR code detection |
 | pdf2image >= 1.16.0 | PDF page rendering for QR scanning |
@@ -60,7 +60,6 @@ python src/main.py
 | pdfminer.six >= 20221105 | Scanned PDF detection |
 | easyocr >= 1.7.0 | OCR for scanned PDFs |
 | docx2pdf >= 0.1.8 | Word → PDF via COM |
-| python-docx >= 1.1.0 | DOCX document creation |
 
 ## Usage
 
@@ -116,7 +115,7 @@ imajin/
 ├── src/
 │   ├── main.py
 │   ├── assets/
-│   │   └── fonts/                  # Space Grotesk font files
+│   │   └── fonts/                  # Outfit & DM Sans variable fonts
 │   ├── ui/
 │   │   ├── hub_window.py           # Main window & navigation
 │   │   ├── image_converter_window.py
