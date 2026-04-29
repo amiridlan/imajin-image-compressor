@@ -10,32 +10,37 @@ consistent styling throughout the application.
 class Theme:
     """Centralized color palette and design tokens"""
 
-    # Color Palette (PRESERVED - DO NOT MODIFY)
-    BG_PRIMARY = '#F3F0FF'      # 60% - Light purple (background)
-    BG_SECONDARY = '#E0D7FF'    # 30% - Medium purple (UI elements)
-    ACCENT = '#CBE67C'          # 10% - Lime green (highlights)
-    TEXT = '#352E52'            # Dark purple (text)
+    # Color Palette — Synthwave Drive (60 / 30 / 10)
+    BG_PRIMARY = '#0D0221'      # 60% - Ultra dark purple (main background)
+    BG_SECONDARY = '#1A0533'    # 30% - Deep magenta-purple (panels, cards)
+    ACCENT = '#FF2D78'          # 10% - Hot pink (interactive, highlights)
+    TEXT = '#F0E6FF'            # Light lavender-white (all body text + borders)
 
-    # Semantic Colors (derived from palette)
-    SUCCESS = '#CBE67C'         # Same as accent - green for success
-    WARNING = '#FFA500'         # Orange for warnings
-    ERROR = '#FF4444'           # Red for errors
-    INFO = '#6C5CE7'            # Purple for info
+    # Semantic Colors
+    SUCCESS = '#4ADE80'         # Bright green — readable on dark backgrounds
+    SUCCESS_TEXT = '#4ADE80'    # Same — no separate dark-text variant needed
+    WARNING = '#FFB800'         # Amber
+    ERROR = '#FF5070'           # Bright red-pink
+    INFO = '#A78BFA'            # Soft purple
+
+    # Input / muted
+    INPUT_BG = '#0F0428'        # Input field background (deeper than BG_PRIMARY)
+    TEXT_MUTED = '#9B7BB8'      # Secondary / hint text
 
     # Neutral Colors
     WHITE = '#FFFFFF'
     BLACK = '#000000'
-    DISABLED_BG = '#CCCCCC'
-    DISABLED_TEXT = '#666666'
-    DISABLED_BORDER = '#999999'
+    DISABLED_BG = '#2A1545'
+    DISABLED_TEXT = '#5C4070'
+    DISABLED_BORDER = '#3D1F5A'
 
     # Typography
-    FONT_FAMILY = 'Space Grotesk'
-    FONT_DISPLAY = 'VCR OSD Mono'
-    FONT_SIZE_SMALL = 9
-    FONT_SIZE_NORMAL = 10
-    FONT_SIZE_LARGE = 14
-    FONT_SIZE_TITLE = 16
+    FONT_FAMILY = 'DM Sans 14pt'
+    FONT_DISPLAY = 'Outfit'
+    FONT_SIZE_SMALL = 13
+    FONT_SIZE_NORMAL = 15
+    FONT_SIZE_LARGE = 19
+    FONT_SIZE_TITLE = 24
 
     # Spacing (in pixels)
     SPACING_XS = 5
@@ -59,10 +64,10 @@ class Theme:
     ANIMATION_NORMAL = 300
     ANIMATION_SLOW = 500
 
-    # Shadow Definitions (RGBA format)
-    SHADOW_LIGHT = 'rgba(53, 46, 82, 0.1)'
-    SHADOW_MEDIUM = 'rgba(53, 46, 82, 0.15)'
-    SHADOW_HEAVY = 'rgba(53, 46, 82, 0.25)'
+    # Shadow Definitions — pink glow for dark theme
+    SHADOW_LIGHT = 'rgba(255, 45, 120, 0.15)'
+    SHADOW_MEDIUM = 'rgba(255, 45, 120, 0.28)'
+    SHADOW_HEAVY = 'rgba(255, 45, 120, 0.45)'
 
     # Shadow Offset and Blur
     SHADOW_OFFSET_X = 0
@@ -70,7 +75,7 @@ class Theme:
     SHADOW_BLUR = 15
 
     # Gradient Colors (for progress bar and effects)
-    ACCENT_LIGHT = '#D4F08C'    # Lighter shade of accent
+    ACCENT_LIGHT = '#FF6BA0'    # Lighter hot pink
 
     # Opacity Values
     OPACITY_FULL = 1.0

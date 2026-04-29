@@ -1,199 +1,170 @@
-# Imajin - Image Processor
+# Imajin v2.0 — Multi-Purpose Toolkit
 
-An image processing Python application for compressing and converting images with drag-and-drop interface.
+A Windows desktop application built with PyQt6. Convert images, transform PDFs, and scan QR codes for malware — all from a single hub.
 
 ## Features
 
-- **Bulk Image Compression** - Compress multiple images with adjustable quality (1-100)
-- **Format Conversion** - Convert JPG/PNG to WebP or AVIF formats
-- **Drag-and-Drop Interface** - Simply drag images into the window
-- **Metadata Removal** - Optionally remove EXIF data (camera info, GPS, etc.)
+### Image Converter
+- Compress JPG / PNG with adjustable quality (1–100)
+- Convert to **WebP** or **AVIF** for smaller files
+- Drag-and-drop or multi-file picker
+- Optional EXIF metadata removal
+- Background processing — UI stays responsive
+
+### PDF ↔ Word Converter
+- **PDF → Word** — preserves layout, tables, and images via `pdf2docx`
+- **Scanned PDF → Word** — OCR fallback via `easyocr` (auto-detected)
+- **Word → PDF** — one-click export via Microsoft Word COM automation
+- Progress log with per-file status
+
+### QR Scanner
+- **Camera mode** — live viewfinder with real-time bounding boxes around detected codes
+- **Upload mode** — scan images or multi-page PDFs for embedded QR codes
+- **Threat detection** — checks URLs against the URLhaus malware blocklist (cached, updated every 24 h)
+- **VirusTotal** — optional live URL scan with your own API key
+- Multi-code support: all detected codes listed with SAFE / MALICIOUS / UNKNOWN badges
+- Double-click any result for full details and one-click URL open
 
 ## Requirements
 
-- Python 3.11 or higher
-- PyQt6 >= 6.6.0
-- Pillow >= 10.0.0
-- pillow-avif-plugin >= 1.4.0 (for AVIF support)
+- Python 3.11+
+- Microsoft Word (for Word → PDF conversion only)
+- Poppler for Windows (for scanning QR codes inside PDF files)
 
 ## Installation
-
-### Windows
-
-1. Run the installation script:
-
-   ```cmd
-   install.bat
-   ```
-
-2. Launch the application:
-   ```cmd
-   python src/main.py
-   ```
-
-### Linux/Mac
-
-1. Make the install script executable and run it:
-
-   ```bash
-   chmod +x install.sh
-   ./install.sh
-   ```
-
-2. Launch the application:
-   ```bash
-   python src/main.py
-   ```
-
-### Manual Installation
-
-If you prefer to install manually:
 
 ```bash
 pip install -r requirements.txt
 python src/main.py
 ```
 
-## Usage Guide
+### Poppler (PDF QR scanning)
 
-### Quick Start
+1. Download the latest Poppler for Windows from [github.com/oschwartz10612/poppler-windows/releases](https://github.com/oschwartz10612/poppler-windows/releases)
+2. Extract and add the `bin/` folder to your system `PATH`
+3. Restart the application
 
-1. **Add Images**
+## Dependencies
 
-   - Drag and drop images directly into the window, OR
-   - Click "Add Images" button to select files
+| Package | Purpose |
+|---------|---------|
+| PyQt6 >= 6.6.0 | GUI framework |
+| Pillow >= 10.0.0 | Image processing |
+| pillow-avif-plugin >= 1.4.0 | AVIF format support |
+| qtawesome >= 1.3.0 | FontAwesome icons |
+| opencv-python >= 4.8.0 | Camera capture & frame processing |
+| pyzbar >= 0.1.9 | QR code detection |
+| pdf2image >= 1.16.0 | PDF page rendering for QR scanning |
+| requests >= 2.31.0 | URLhaus feed download |
+| pdf2docx >= 0.5.6 | PDF → Word conversion |
+| pdfminer.six >= 20221105 | Scanned PDF detection |
+| easyocr >= 1.7.0 | OCR for scanned PDFs |
+| docx2pdf >= 0.1.8 | Word → PDF via COM |
+| python-docx >= 1.1.0 | DOCX document creation |
 
-2. **Configure Settings**
+## Usage
 
-   - **Output Folder**: Choose where to save processed images (default: `./output`)
-   - **Output Format**: Select format
-     - `Keep Original`: Compress while maintaining format (JPG stays JPG)
-     - `WebP`: Convert to WebP format (smaller files, wide support)
-     - `AVIF`: Convert to AVIF format (smallest files, newer format)
-   - **Compression Quality**: Adjust slider (1-100)
-     - Lower values = smaller files, lower quality
-     - Higher values = better quality, larger files
-     - Recommended: 85% for good balance
-   - **Remove Metadata**: Check to strip EXIF data from images
+### Hub screen
 
-3. **Process Images**
-   - Check/uncheck images in the list to include/exclude them
-   - Click "Start Processing"
-   - Monitor progress in real-time
-   - View completion summary
+Launch the app and click any feature card to open that tool. Click **Back** inside any tool to return to the hub.
 
-### Detailed Features
+### Image Converter
 
-#### Image List Management
+1. Drag images into the drop zone or click **Add Images**
+2. Choose output folder, format, and quality
+3. Click **Start Processing**
 
-- **Add Images**: Select multiple images at once using Ctrl+Click or Shift+Click
-- **Remove Selected**: Highlight images and click to remove them from the list
-- **Clear All**: Remove all images from the list
-- **Checkboxes**: Only checked images will be processed
+### PDF ↔ Word
 
-#### Format Conversion
+1. Select direction: **PDF → Word** or **Word → PDF**
+2. Drop files into the list
+3. Choose output folder
+4. Enable **Use OCR** if converting scanned/image PDFs (first run downloads the OCR model, ~100 MB)
+5. Click **Convert**
 
-- **WebP**: Modern format with excellent compression, supported by all major browsers
-- **AVIF**: Next-generation format with superior compression, growing browser support
-- **Keep Original**: Maintains original format (JPG/PNG) while compressing
+> Word → PDF requires Microsoft Word to be installed.
 
-#### Compression Quality
+### QR Scanner
 
-- **100%**: Maximum quality, minimal compression
-- **85%** (Recommended): Excellent quality with good file size reduction
-- **70%**: Good quality for web use
-- **50%**: Acceptable quality, significant size reduction
-- **<50%**: Noticeable quality loss, maximum compression
+**Camera**
+1. Click **Start Camera** (grant webcam access if prompted)
+2. Hold a QR code in front of the camera — bounding boxes appear automatically
+3. Detected codes appear in the results panel with a threat status badge
 
-#### Metadata (EXIF) Removal
+**Upload**
+1. Switch to **Upload** tab
+2. Drop an image or PDF into the zone
+3. Click **Scan**
 
-EXIF data includes:
+**VirusTotal (optional)**
+- Paste your VirusTotal API key in the Settings panel to enable live URL scanning beyond the offline blocklist
 
-- Camera make and model
-- Photo settings (ISO, aperture, shutter speed)
-- Date and time taken
-- GPS location (if available)
-- Copyright information
-
-Enable "Remove metadata" to:
-
-- Reduce file size slightly
-- Protect privacy (removes GPS data)
-- Remove identifying camera information
-
-### Tips & Best Practices
-
-1. **Format Choice**:
-   - Use **WebP** for web publishing (wide compatibility)
-   - Use **AVIF** for maximum compression (newest browsers)
-   - Use **Keep Original** when format compatibility is critical
-2. **Quality Settings**:
-   - Photos for web: 80-85%
-   - Professional use: 90-95%
-   - Archive/storage: 70-80%
-
-### Troubleshooting
-
-**AVIF option not showing?**
-
-- Install the AVIF plugin: `pip install pillow-avif-plugin`
-- Restart the application
-
-**Images not processing?**
-
-- Check that images are checked in the list
-- Verify output folder path is valid
-- Ensure sufficient disk space
-
-**Slow processing?**
-
-- Normal for large images or many files
-- UI remains responsive - you can minimize the window
-- Processing happens in background thread
-
-**Error messages?**
-
-- Check file permissions
-- Ensure images aren't corrupted
-- Verify format is supported (JPG, JPEG, PNG)
-
-## Building Executable (.exe)
-
-### Windows
+## Building the Executable
 
 ```cmd
-build.bat
+pyinstaller Imajin.spec
 ```
 
-### Linux/Mac
+The standalone `.exe` is written to `dist/Imajin.exe`.
 
-```bash
-chmod +x build.sh
-./build.sh
-```
-
-The executable will be created in the `dist/` folder.
+> easyocr downloads its model at first use (~100 MB). This happens inside the packaged exe the first time OCR is requested.
 
 ## Project Structure
 
 ```
 imajin/
 ├── src/
-│   ├── main.py              # Application entry point
+│   ├── main.py
+│   ├── assets/
+│   │   └── fonts/                  # Space Grotesk font files
 │   ├── ui/
-│   │   └── main_window.py   # Main UI window
+│   │   ├── hub_window.py           # Main window & navigation
+│   │   ├── image_converter_window.py
+│   │   ├── pdf_converter_window.py
+│   │   ├── qr_scanner_window.py
+│   │   ├── components/
+│   │   │   └── feature_card.py     # Clickable hub cards
+│   │   ├── dialogs/
+│   │   │   └── qr_result_dialog.py
+│   │   └── styles/
+│   │       └── theme.py            # Design tokens
 │   ├── core/
-│   │   ├── compressor.py    # Image compression logic
-│   │   ├── converter.py     # Format conversion logic
-│   │   └── worker.py        # Background processing thread
+│   │   ├── image/                  # Image compression & conversion
+│   │   ├── pdf/
+│   │   │   ├── pdf_to_word.py
+│   │   │   ├── word_to_pdf.py
+│   │   │   └── pdf_worker.py
+│   │   └── qr/
+│   │       ├── scanner.py          # QR detection & sorting
+│   │       ├── malware_checker.py  # URLhaus + VirusTotal
+│   │       ├── urlhaus_list.py     # Threat feed cache
+│   │       ├── scan_worker.py      # Background scan thread
+│   │       └── camera_worker.py   # Live camera thread
 │   └── utils/
-│       └── metadata.py      # EXIF metadata handling
-├── requirements.txt         # Python dependencies
-├── install.sh              # Linux/Mac installation script
-├── install.bat             # Windows installation script
-├── build.sh                # Linux/Mac build script
-├── build.bat               # Windows build script
-├── DEVELOPMENT_PLAN.md     # Development roadmap
-├── CHECKLIST.md            # Sprint checklist
-└── README.md               # This file
+│       ├── file_utils.py
+│       └── metadata.py
+├── Imajin.spec                     # PyInstaller build spec
+├── requirements.txt
+└── README.md
 ```
+
+## Troubleshooting
+
+**AVIF format not available**
+```bash
+pip install pillow-avif-plugin
+```
+
+**Camera not detected**
+- Check webcam permissions in Windows Settings > Privacy > Camera
+- Try a different camera index (default is 0) in the QR Scanner settings panel
+
+**OCR first run is slow**
+- easyocr downloads its English model (~100 MB) on first use — this is expected
+
+**Word → PDF fails**
+- Microsoft Word must be installed and licensed
+- If Word is installed but still fails, try running the app as Administrator
+
+**QR codes in PDFs not detected**
+- Poppler must be installed and its `bin/` folder must be on the system PATH

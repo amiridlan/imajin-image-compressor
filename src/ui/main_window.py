@@ -38,39 +38,38 @@ class MainWindow(QMainWindow):
     def _load_fonts(self):
         fonts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                  '..', 'assets', 'fonts')
-        for fname in ('SpaceGrotesk-Regular.ttf',
-                      'SpaceGrotesk-Medium.ttf',
-                      'SpaceGrotesk-Bold.ttf'):
+        for fname in ('Outfit-Variable.ttf',
+                      'DMSans-Variable.ttf'):
             path = os.path.normpath(os.path.join(fonts_dir, fname))
             if os.path.exists(path):
                 QFontDatabase.addApplicationFont(path)
 
     def apply_global_style(self):
-        font = QFont("Space Grotesk", 10)
+        font = QFont(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL)
         self.setFont(font)
 
         self.setStyleSheet(f"""
             QMainWindow {{
                 background-color: {Theme.BG_PRIMARY};
                 color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QWidget {{
                 background-color: {Theme.BG_PRIMARY};
                 color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QLabel {{
                 color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 background-color: transparent;
             }}
 
             QCheckBox {{
                 color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 spacing: 8px;
                 background-color: transparent;
             }}
@@ -80,7 +79,7 @@ class MainWindow(QMainWindow):
                 height: 18px;
                 border: 2px solid {Theme.TEXT};
                 border-radius: 3px;
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
             }}
 
             QCheckBox::indicator:checked {{
@@ -94,7 +93,7 @@ class MainWindow(QMainWindow):
                 border: 2px solid {Theme.TEXT};
                 border-radius: 5px;
                 padding: 8px 16px;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 font-weight: bold;
             }}
 
@@ -109,18 +108,18 @@ class MainWindow(QMainWindow):
             }}
 
             QPushButton:disabled {{
-                background-color: #cccccc;
-                color: #666666;
-                border: 2px solid #999999;
+                background-color: {Theme.DISABLED_BG};
+                color: {Theme.DISABLED_TEXT};
+                border: 2px solid {Theme.DISABLED_BORDER};
             }}
 
             QLineEdit {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
                 color: {Theme.TEXT};
                 border: 2px solid {Theme.BG_SECONDARY};
                 border-radius: 3px;
                 padding: 5px;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QLineEdit:focus {{
@@ -128,11 +127,11 @@ class MainWindow(QMainWindow):
             }}
 
             QListWidget {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
                 color: {Theme.TEXT};
                 border: 2px solid {Theme.BG_SECONDARY};
                 border-radius: 5px;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QListWidget::item {{
@@ -152,12 +151,12 @@ class MainWindow(QMainWindow):
             }}
 
             QComboBox {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
                 color: {Theme.TEXT};
                 border: 2px solid {Theme.BG_SECONDARY};
                 border-radius: 3px;
                 padding: 5px;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QComboBox:hover {{
@@ -178,11 +177,11 @@ class MainWindow(QMainWindow):
             }}
 
             QComboBox QAbstractItemView {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
                 color: {Theme.TEXT};
                 selection-background-color: {Theme.BG_SECONDARY};
                 border: 2px solid {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QSlider::groove:horizontal {{
@@ -210,7 +209,7 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 text-align: center;
                 color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 font-weight: bold;
             }}
 
@@ -222,7 +221,7 @@ class MainWindow(QMainWindow):
             QMessageBox {{
                 background-color: {Theme.BG_PRIMARY};
                 color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
             }}
 
             QMessageBox QPushButton {{
@@ -249,15 +248,15 @@ class MainWindow(QMainWindow):
             }}
 
             #rightPanel QLineEdit {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
             }}
 
             #rightPanel QComboBox {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
             }}
 
             #rightPanel QTextEdit {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
             }}
         """)
 
@@ -266,9 +265,9 @@ class MainWindow(QMainWindow):
         label.setStyleSheet(f"""
             QLabel {{
                 color: {Theme.TEXT};
-                font-size: 9px;
+                font-size: 13px;
                 font-weight: bold;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 background-color: {Theme.ACCENT};
                 border: none;
                 padding: 2px 6px;
@@ -313,7 +312,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"""
             QLabel {{
                 color: {Theme.ACCENT};
-                font-size: 16px;
+                font-size: 22px;
                 font-weight: bold;
                 font-family: '{Theme.FONT_DISPLAY}';
                 background-color: transparent;
@@ -325,7 +324,7 @@ class MainWindow(QMainWindow):
         self.status_label.setStyleSheet(f"""
             QLabel {{
                 color: {Theme.BG_SECONDARY};
-                font-size: 9px;
+                font-size: 13px;
                 font-family: '{Theme.FONT_DISPLAY}';
                 background-color: transparent;
             }}
@@ -372,9 +371,9 @@ class MainWindow(QMainWindow):
         drop_label.setStyleSheet(f"""
             QLabel {{
                 color: {Theme.TEXT};
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: bold;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 background-color: transparent;
                 border: none;
             }}
@@ -384,8 +383,8 @@ class MainWindow(QMainWindow):
         or_label.setStyleSheet(f"""
             QLabel {{
                 color: {Theme.TEXT};
-                font-size: 10px;
-                font-family: 'Space Grotesk';
+                font-size: 15px;
+                font-family: '{Theme.FONT_FAMILY}';
                 background-color: transparent;
                 border: none;
             }}
@@ -414,9 +413,9 @@ class MainWindow(QMainWindow):
         self.file_count_label.setStyleSheet(f"""
             QLabel {{
                 color: {Theme.TEXT};
-                font-size: 10px;
+                font-size: 15px;
                 font-weight: bold;
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 background-color: transparent;
                 border: none;
             }}
@@ -471,12 +470,12 @@ class MainWindow(QMainWindow):
         self.format_selector.setToolTip("Choose output format: Keep Original, WebP, or AVIF")
         self.format_selector.view().setStyleSheet(f"""
             QAbstractItemView {{
-                background-color: white;
+                background-color: {Theme.INPUT_BG};
                 color: {Theme.TEXT};
                 border: 2px solid {Theme.TEXT};
                 selection-background-color: {Theme.BG_SECONDARY};
                 selection-color: {Theme.TEXT};
-                font-family: 'Space Grotesk';
+                font-family: '{Theme.FONT_FAMILY}';
                 padding: 2px;
                 outline: none;
             }}

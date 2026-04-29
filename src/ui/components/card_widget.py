@@ -42,7 +42,7 @@ class CardWidget(QWidget):
         # Create shadow effect
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(Theme.SHADOW_BLUR)
-        shadow.setColor(QColor(53, 46, 82, 40))  # Dark purple with alpha
+        shadow.setColor(QColor(255, 45, 120, 70))
         shadow.setOffset(Theme.SHADOW_OFFSET_X, Theme.SHADOW_OFFSET_Y)
         self.setGraphicsEffect(shadow)
 

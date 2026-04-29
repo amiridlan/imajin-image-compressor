@@ -14,12 +14,12 @@ if application_path not in sys.path:
     sys.path.insert(0, application_path)
 
 from PyQt6.QtWidgets import QApplication
-from ui.main_window import MainWindow
+from ui.hub_window import HubWindow
 
 
 def main():
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = HubWindow()
     window.show()
     sys.exit(app.exec())
 
