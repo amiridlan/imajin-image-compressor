@@ -43,3 +43,6 @@ output/
 # OS
 .DS_Store
 Thumbs.db
+
+# Design docs (user flows, sitemap)
+docs/
