@@ -30,7 +30,6 @@ DisableProgramGroupPage=yes
 ; ── Output ────────────────────────────────────────────────────────────
 OutputDir=installer
 OutputBaseFilename=ImajinSetup
-SetupIconFile=src\assets\icons\imajin.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
