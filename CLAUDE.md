@@ -135,6 +135,43 @@ All heavy work runs in `QThread` subclasses. Never block the main thread.
 | PDF sign save | `ui/sign_pdf_window._SaveWorker` | `done`, `error` |
 | QR upload scan | `core/qr/scan_worker.py` | `result_found`, `finished`, `error` |
 | Camera feed | `core/qr/camera_worker.py` | `frame_ready`, `code_detected` |
+| Update checker | `core/updater.UpdateChecker` | `update_available`, `up_to_date`, `check_failed` |
+| Update downloader | `core/updater.UpdateDownloader` | `progress`, `ready`, `error` |
+
+---
+
+## Auto-update system
+
+**Files:** `src/version.py`, `src/core/updater.py`, banner wired in `hub_window.py`
+
+**Release hosting:** GitHub Releases. Set `GITHUB_OWNER` and `GITHUB_REPO` in `core/updater.py` before publishing.
+
+**Version format:** `MAJOR.MINOR.PATCH` string in `src/version.py`. Bump this before every release. Tag the GitHub release `vMAJOR.MINOR.PATCH` (e.g. `v2.1.0`). The checker compares tuples so `2.10.0 > 2.9.0` works correctly.
+
+**User flow:**
+1. App starts → `UpdateChecker` thread silently calls the GitHub Releases API
+2. If a newer version is found → accent-coloured banner appears below the hub header
+3. User clicks **Install Now** → `UpdateDownloader` streams the installer to `%TEMP%\ImajinSetup.exe` with a live progress bar
+4. Download completes → button changes to **Restart & Install**
+5. Click → `subprocess.Popen([installer, "/SILENT", "/CLOSEAPPLICATIONS"])` + `sys.exit()`
+6. Inno Setup overwrites the old exe and relaunches the app
+
+**Installer:** `Imajin.iss` (Inno Setup script). Build with Inno Setup Compiler → outputs `installer\ImajinSetup.exe`. Attach this file as a release asset on GitHub. The `/SILENT` flag suppresses all dialogs; `PrivilegesRequired=lowest` means no UAC prompt.
+
+**Releasing is fully automated — just push to `main`.**
+
+The workflow (`.github/workflows/release.yml`) handles everything:
+1. Reads current version from `src/version.py`, bumps the patch number
+2. Writes the new version back to `src/version.py` and `Imajin.iss`
+3. Runs `pyinstaller Imajin.spec` on a Windows runner
+4. Installs Inno Setup via Chocolatey, compiles `Imajin.iss` → `installer/ImajinSetup.exe`
+5. Commits the version bump back to `main` with `[skip ci]` (prevents re-trigger)
+6. Creates and pushes a git tag `vX.Y.Z`
+7. Publishes a GitHub Release with auto-generated notes and the installer attached
+
+**To skip a release** (e.g. docs-only change): include `[skip ci]` in your commit message.
+
+**To do a minor or major bump**: manually edit `src/version.py` before pushing — the workflow will then auto-increment from whatever you set.
 
 ---
 

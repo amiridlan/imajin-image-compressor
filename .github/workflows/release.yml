@@ -1,0 +1,159 @@
+name: Build & Release
+
+# Runs on every push to main.
+# Skips if the commit was made by this workflow (version bump commit).
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: windows-latest
+    permissions:
+      contents: write   # needed to push commits, create tags, and publish releases
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Use a PAT or the default GITHUB_TOKEN.
+          # GITHUB_TOKEN is sufficient here because we add [skip ci] to the
+          # version-bump commit so it won't re-trigger this workflow.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0   # full history needed for git log in release notes
+
+      # ── 2. Python ────────────────────────────────────────────────────
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip         # caches ~/.cache/pip between runs
+
+      # ── 3. Bump patch version ─────────────────────────────────────────
+      # Reads src/version.py, increments the patch number, writes it back,
+      # and also patches the #define AppVersion line in Imajin.iss.
+      - name: Bump version
+        id: version
+        shell: python
+        run: |
+          import re, os
+
+          commit_msg = os.environ.get('COMMIT_MSG', '')
+
+          # --- Explicit version override: [release X.Y.Z] in commit message ---
+          override = re.search(r'\[release (\d+\.\d+\.\d+)\]', commit_msg)
+
+          with open('src/version.py') as f:
+              content = f.read()
+          m = re.search(r'__version__ = "(\d+)\.(\d+)\.(\d+)"', content)
+          major, minor, patch = m.groups()
+
+          if override:
+              new_version = override.group(1)
+              print(f"Override detected — releasing v{new_version}")
+          else:
+              new_version = f"{major}.{minor}.{int(patch) + 1}"
+              print(f"Auto patch bump — releasing v{new_version}")
+
+          # --- version.py ---
+          with open('src/version.py', 'w') as f:
+              f.write(f'__version__ = "{new_version}"\n')
+
+          # --- Imajin.iss ---
+          with open('Imajin.iss') as f:
+              iss = f.read()
+          iss = re.sub(
+              r'(#define AppVersion\s+")[^"]*(")',
+              rf'\g<1>{new_version}\g<2>',
+              iss
+          )
+          with open('Imajin.iss', 'w') as f:
+              f.write(iss)
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+              print(f'version={new_version}', file=fh)
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+
+      # ── 4. Install Python dependencies ───────────────────────────────
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      # ── 5. Build .exe with PyInstaller ───────────────────────────────
+      - name: Build exe
+        run: pyinstaller Imajin.spec
+
+      # ── 6. Install Inno Setup ────────────────────────────────────────
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      # ── 7. Compile installer ─────────────────────────────────────────
+      - name: Build installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" Imajin.iss
+
+      # ── 8. Commit version bump back to main ──────────────────────────
+      # [skip ci] in the message prevents this commit from re-triggering
+      # this workflow.
+      - name: Commit and push version bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/version.py Imajin.iss
+          git commit -m "chore: bump version to v${{ steps.version.outputs.version }} [skip ci]"
+          git push
+
+      # ── 9. Tag the release ───────────────────────────────────────────
+      - name: Create and push tag
+        run: |
+          git tag v${{ steps.version.outputs.version }}
+          git push origin v${{ steps.version.outputs.version }}
+
+      # ── 10. Generate release notes from commits since last tag ────────
+      - name: Generate release notes
+        id: notes
+        shell: python
+        run: |
+          import subprocess, os
+
+          # Get previous tag (the one before this run)
+          result = subprocess.run(
+              ['git', 'tag', '--sort=-version:refname'],
+              capture_output=True, text=True
+          )
+          tags = result.stdout.strip().splitlines()
+          # tags[0] is the tag we just pushed; tags[1] is the previous one
+          prev_tag = tags[1] if len(tags) > 1 else None
+
+          if prev_tag:
+              log = subprocess.run(
+                  ['git', 'log', f'{prev_tag}..HEAD', '--pretty=format:- %s', '--no-merges'],
+                  capture_output=True, text=True
+              ).stdout.strip()
+          else:
+              log = subprocess.run(
+                  ['git', 'log', '--pretty=format:- %s', '--no-merges'],
+                  capture_output=True, text=True
+              ).stdout.strip()
+
+          notes = f"## What's changed\n\n{log or '- Internal updates'}"
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+              # Multi-line output requires EOF delimiter
+              delimiter = "EOF_NOTES"
+              print(f'notes<<{delimiter}', file=fh)
+              print(notes, file=fh)
+              print(delimiter, file=fh)
+
+      # ── 11. Publish GitHub Release ────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Imajin v${{ steps.version.outputs.version }}
+          body: ${{ steps.notes.outputs.notes }}
+          files: installer/ImajinSetup.exe
+          draft: false
+          prerelease: false

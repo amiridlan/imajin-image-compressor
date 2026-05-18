@@ -1,6 +1,7 @@
 import os
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                              QLabel, QStackedWidget, QSizePolicy, QGraphicsOpacityEffect)
+                              QLabel, QStackedWidget, QSizePolicy, QGraphicsOpacityEffect,
+                              QPushButton, QProgressBar)
 from PyQt6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QFont, QFontDatabase
 from ui.components.feature_card import FeatureCard
@@ -33,6 +34,11 @@ class HubWindow(QMainWindow):
         self._password_window = None
         self._organize_window = None
         self._sign_window     = None
+
+        # Auto-update
+        self._update_url       = None
+        self._update_downloader = None
+        self._start_update_check()
 
     # ------------------------------------------------------------------
     # Fonts & global style (shared with feature windows)
@@ -222,6 +228,11 @@ class HubWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
 
         root.addWidget(self._build_header())
+
+        self._update_banner = self._build_update_banner()
+        self._update_banner.hide()
+        root.addWidget(self._update_banner)
+
         root.addWidget(self._build_cards_area(), 1)
 
         return page
@@ -431,6 +442,144 @@ class HubWindow(QMainWindow):
         row.addWidget(lbl)
         row.addWidget(line_r)
         return container
+
+    # ------------------------------------------------------------------
+    # Update banner
+    # ------------------------------------------------------------------
+
+    def _build_update_banner(self):
+        banner = QWidget()
+        banner.setFixedHeight(44)
+        banner.setStyleSheet(f"""
+            QWidget {{
+                background-color: rgba(255, 45, 120, 18);
+                border-bottom: 1px solid rgba(255, 45, 120, 80);
+            }}
+        """)
+        layout = QHBoxLayout(banner)
+        layout.setContentsMargins(16, 0, 12, 0)
+        layout.setSpacing(12)
+
+        icon = QLabel()
+        icon.setPixmap(qta.icon('fa5s.arrow-circle-up', color=Theme.ACCENT).pixmap(16, 16))
+        icon.setStyleSheet("background: transparent; border: none;")
+
+        self._banner_label = QLabel("")
+        self._banner_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT};
+                font-family: '{Theme.FONT_FAMILY}';
+                font-size: 13px;
+                font-weight: 600;
+                background: transparent;
+                border: none;
+            }}
+        """)
+
+        self._banner_progress = QProgressBar()
+        self._banner_progress.setFixedHeight(6)
+        self._banner_progress.setTextVisible(False)
+        self._banner_progress.setRange(0, 100)
+        self._banner_progress.setStyleSheet(f"""
+            QProgressBar {{
+                background: rgba(255,255,255,15);
+                border: none;
+                border-radius: 3px;
+            }}
+            QProgressBar::chunk {{
+                background: {Theme.ACCENT};
+                border-radius: 3px;
+            }}
+        """)
+        self._banner_progress.hide()
+
+        self._install_btn = QPushButton("Install Now")
+        self._install_btn.setFixedHeight(28)
+        self._install_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT};
+                color: {Theme.TEXT};
+                border: none;
+                border-radius: 4px;
+                font-family: '{Theme.FONT_FAMILY}';
+                font-weight: bold;
+                font-size: 12px;
+                padding: 0 12px;
+            }}
+            QPushButton:hover {{ background-color: {Theme.ACCENT_LIGHT}; }}
+        """)
+        self._install_btn.clicked.connect(self._on_install_clicked)
+
+        dismiss_btn = QPushButton("×")
+        dismiss_btn.setFixedSize(24, 24)
+        dismiss_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {Theme.TEXT_MUTED};
+                border: none;
+                font-size: 16px;
+            }}
+            QPushButton:hover {{ color: {Theme.TEXT}; }}
+        """)
+        dismiss_btn.clicked.connect(self._update_banner.hide)
+
+        layout.addWidget(icon)
+        layout.addWidget(self._banner_label)
+        layout.addWidget(self._banner_progress, 1)
+        layout.addWidget(self._install_btn)
+        layout.addWidget(dismiss_btn)
+        return banner
+
+    # ------------------------------------------------------------------
+    # Auto-update logic
+    # ------------------------------------------------------------------
+
+    def _start_update_check(self):
+        from core.updater import UpdateChecker
+        self._checker = UpdateChecker()
+        self._checker.update_available.connect(self._on_update_available)
+        self._checker.start()
+
+    def _on_update_available(self, version, url):
+        self._update_url = url
+        self._banner_label.setText(f"Imajin v{version} is available")
+        self._banner_progress.hide()
+        self._install_btn.setText("Install Now")
+        self._install_btn.setEnabled(True)
+        self._update_banner.show()
+
+    def _on_install_clicked(self):
+        if not self._update_url:
+            return
+        self._install_btn.setEnabled(False)
+        self._install_btn.setText("Downloading…")
+        self._banner_progress.setValue(0)
+        self._banner_progress.show()
+
+        from core.updater import UpdateDownloader
+        self._update_downloader = UpdateDownloader(self._update_url)
+        self._update_downloader.progress.connect(self._banner_progress.setValue)
+        self._update_downloader.ready.connect(self._on_download_ready)
+        self._update_downloader.error.connect(self._on_download_error)
+        self._update_downloader.start()
+
+    def _on_download_ready(self, path):
+        self._banner_progress.hide()
+        self._banner_label.setText("Ready to install — the app will restart")
+        self._install_btn.setText("Restart & Install")
+        self._install_btn.setEnabled(True)
+        self._install_btn.clicked.disconnect()
+        self._install_btn.clicked.connect(lambda: self._launch(path))
+
+    def _on_download_error(self, msg):
+        self._banner_progress.hide()
+        self._banner_label.setText(f"Download failed: {msg}")
+        self._install_btn.setText("Retry")
+        self._install_btn.setEnabled(True)
+
+    def _launch(self, path):
+        from core.updater import launch_installer
+        launch_installer(path)
 
     # ------------------------------------------------------------------
     # Navigation

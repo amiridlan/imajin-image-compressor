@@ -27,6 +27,9 @@ wheels/
 *.manifest
 *.spec
 
+# Inno Setup output
+installer/
+
 # Config
 config.json
 
