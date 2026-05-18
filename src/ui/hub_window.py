@@ -521,7 +521,7 @@ class HubWindow(QMainWindow):
             }}
             QPushButton:hover {{ color: {Theme.TEXT}; }}
         """)
-        dismiss_btn.clicked.connect(self._update_banner.hide)
+        dismiss_btn.clicked.connect(lambda: self._update_banner.hide())
 
         layout.addWidget(icon)
         layout.addWidget(self._banner_label)
