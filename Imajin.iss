@@ -4,7 +4,7 @@
 ; Output: installer\ImajinSetup.exe
 
 #define AppName      "Imajin"
-#define AppVersion   "2.0.0"
+#define AppVersion   "2.1.1"
 #define AppPublisher "Amir Idlan"
 #define AppExeName   "Imajin.exe"
 #define AppURL       "https://github.com/amiridlan/imajin-image-compressor"
