@@ -14,3 +14,7 @@ pdf2docx>=0.5.6
 pdfminer.six>=20221105
 easyocr>=1.7.0
 docx2pdf>=0.1.8
+
+# PDF Tools (sign, organize, password)
+pypdf>=4.0.0
+pymupdf>=1.23.0

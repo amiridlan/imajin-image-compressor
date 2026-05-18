@@ -1,0 +1,7 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting pypdf
+  Downloading pypdf-6.11.0-py3-none-any.whl (338 kB)
+Requirement already satisfied: pymupdf in c:\users\lan\appdata\roaming\python\python310\site-packages (1.27.2.3)
+Requirement already satisfied: typing_extensions>=4.0 in c:\users\lan\appdata\roaming\python\python310\site-packages (from pypdf) (4.12.2)
+Installing collected packages: pypdf
+Successfully installed pypdf-6.11.0

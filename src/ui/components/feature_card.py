@@ -19,13 +19,13 @@ _OFFSET_HOVER = 8
 class FeatureCard(QWidget):
     clicked = pyqtSignal()
 
-    def __init__(self, icon_name, title, description, parent=None):
+    def __init__(self, icon_name, title, description, size=(280, 320), parent=None):
         super().__init__(parent)
         self.icon_name = icon_name
         self._hovered = False
         self._animation = None
 
-        self.setFixedSize(280, 320)
+        self.setFixedSize(*size)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         # Required so mouseMoveEvent fires without a button held

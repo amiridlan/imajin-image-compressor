@@ -27,9 +27,12 @@ class HubWindow(QMainWindow):
 
         # Feature windows are imported lazily to avoid circular imports
         # and to prevent heavy modules (easyocr, opencv) loading at startup.
-        self._image_window = None
-        self._pdf_window = None
-        self._qr_window = None
+        self._image_window    = None
+        self._pdf_window      = None
+        self._qr_window       = None
+        self._password_window = None
+        self._organize_window = None
+        self._sign_window     = None
 
     # ------------------------------------------------------------------
     # Fonts & global style (shared with feature windows)
@@ -263,16 +266,26 @@ class HubWindow(QMainWindow):
         return header
 
     def _build_cards_area(self):
-        from PyQt6.QtWidgets import QFrame
+        from PyQt6.QtWidgets import QFrame, QScrollArea
         area = QWidget()
         area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        outer = QVBoxLayout(area)
-        outer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        outer.setSpacing(0)
-        outer.setContentsMargins(40, 48, 40, 32)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
 
-        # Hero text
+        inner = QWidget()
+        inner.setStyleSheet("background: transparent;")
+        scroll.setWidget(inner)
+
+        outer = QVBoxLayout(inner)
+        outer.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        outer.setSpacing(0)
+        outer.setContentsMargins(40, 48, 40, 40)
+
+        # Hero
         hero = QLabel("Imajin Toolkit")
         hero.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hero.setStyleSheet(f"""
@@ -287,22 +300,20 @@ class HubWindow(QMainWindow):
         """)
         outer.addWidget(hero)
 
-        tagline = QLabel("Image conversion  ·  PDF ↔ Word  ·  QR scanning & threat detection")
+        tagline = QLabel("Image & media tools  ·  PDF signing, organizing, and conversion  ·  QR threat detection")
         tagline.setAlignment(Qt.AlignmentFlag.AlignCenter)
         tagline.setStyleSheet(f"""
             QLabel {{
-                color: {Theme.TEXT};
+                color: {Theme.TEXT_MUTED};
                 font-family: '{Theme.FONT_FAMILY}';
-                font-size: 15px;
+                font-size: 14px;
                 background: transparent;
                 padding-top: 6px;
-                padding-bottom: 32px;
-                opacity: 0.8;
+                padding-bottom: 28px;
             }}
         """)
         outer.addWidget(tagline)
 
-        # Thin accent divider
         divider = QFrame()
         divider.setFixedHeight(3)
         divider.setFixedWidth(420)
@@ -310,52 +321,116 @@ class HubWindow(QMainWindow):
         outer.addWidget(divider, 0, Qt.AlignmentFlag.AlignCenter)
         outer.addSpacing(36)
 
-        # Cards row
-        cards_row = QHBoxLayout()
-        cards_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        cards_row.setSpacing(48)
+        # ── Media group ──────────────────────────────────────────────────
+        outer.addWidget(self._section_label("MEDIA"))
+        outer.addSpacing(14)
 
-        image_card = FeatureCard(
-            icon_name='fa5s.images',
-            title='Image Converter',
-            description='Compress & convert\nJPG / PNG → WebP / AVIF'
-        )
+        media_row = QHBoxLayout()
+        media_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        media_row.setSpacing(40)
+
+        image_card = FeatureCard('fa5s.images', 'Image Converter',
+                                 'Compress & convert\nJPG / PNG → WebP / AVIF')
         image_card.clicked.connect(self._open_image_converter)
 
-        pdf_card = FeatureCard(
-            icon_name='fa5s.file-pdf',
-            title='PDF ↔ Word',
-            description='Convert with OCR support\nPDF → Word  ·  Word → PDF'
-        )
-        pdf_card.clicked.connect(self._open_pdf_converter)
-
-        qr_card = FeatureCard(
-            icon_name='fa5s.qrcode',
-            title='QR Scanner',
-            description='Scan & check URLs for threats\nCamera or file upload'
-        )
+        qr_card = FeatureCard('fa5s.qrcode', 'QR Scanner',
+                              'Scan & check URLs for threats\nCamera or file upload')
         qr_card.clicked.connect(self._open_qr_scanner)
 
-        cards_row.addWidget(image_card)
-        cards_row.addWidget(pdf_card)
-        cards_row.addWidget(qr_card)
+        media_row.addWidget(image_card)
+        media_row.addWidget(qr_card)
+        outer.addLayout(media_row)
+        outer.addSpacing(36)
 
-        outer.addLayout(cards_row)
+        # ── Documents group ──────────────────────────────────────────────
+        outer.addWidget(self._section_label("DOCUMENTS"))
+        outer.addSpacing(14)
+
+        docs_row = QHBoxLayout()
+        docs_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        docs_row.setSpacing(28)
+
+        _DS = (220, 270)   # Documents card size
+
+        pdf_card = FeatureCard('fa5s.file-word', 'PDF ↔ Word',
+                               'Convert with OCR\nPDF → Word · Word → PDF',
+                               size=_DS)
+        pdf_card.clicked.connect(self._open_pdf_converter)
+
+        sign_card = FeatureCard('fa5s.signature', 'Sign PDF',
+                                'Add a handwritten or\nimage signature to any page',
+                                size=_DS)
+        sign_card.clicked.connect(self._open_sign_pdf)
+
+        organize_card = FeatureCard('fa5s.th-large', 'Organize PDF',
+                                    'Reorder, rotate & delete\npages visually',
+                                    size=_DS)
+        organize_card.clicked.connect(self._open_organize_pdf)
+
+        password_card = FeatureCard('fa5s.lock', 'Password PDF',
+                                    'Add or remove\npassword protection',
+                                    size=_DS)
+        password_card.clicked.connect(self._open_password_pdf)
+
+        docs_row.addWidget(pdf_card)
+        docs_row.addWidget(sign_card)
+        docs_row.addWidget(organize_card)
+        docs_row.addWidget(password_card)
+        outer.addLayout(docs_row)
         outer.addSpacing(28)
 
         hint = QLabel("Click any card to open the tool")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hint.setStyleSheet(f"""
             QLabel {{
-                color: {Theme.TEXT};
+                color: {Theme.TEXT_MUTED};
                 font-family: '{Theme.FONT_FAMILY}';
                 font-size: 13px;
                 background: transparent;
-                opacity: 0.5;
             }}
         """)
         outer.addWidget(hint)
+
+        # Wrap scroll area
+        wrap_layout = QVBoxLayout(area)
+        wrap_layout.setContentsMargins(0, 0, 0, 0)
+        wrap_layout.addWidget(scroll)
         return area
+
+    def _section_label(self, text):
+        from PyQt6.QtWidgets import QFrame
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        row = QHBoxLayout(container)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(12)
+
+        line_l = QFrame()
+        line_l.setFixedHeight(1)
+        line_l.setStyleSheet(f"background: rgba(240,230,255,40); border: none;")
+        line_l.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        lbl = QLabel(text)
+        lbl.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.ACCENT};
+                font-family: '{Theme.FONT_DISPLAY}';
+                font-size: 12px;
+                font-weight: bold;
+                letter-spacing: 3px;
+                background: transparent;
+            }}
+        """)
+
+        line_r = QFrame()
+        line_r.setFixedHeight(1)
+        line_r.setStyleSheet(f"background: rgba(240,230,255,40); border: none;")
+        line_r.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        row.addWidget(line_l)
+        row.addWidget(lbl)
+        row.addWidget(line_r)
+        return container
 
     # ------------------------------------------------------------------
     # Navigation
@@ -398,3 +473,24 @@ class HubWindow(QMainWindow):
             self._qr_window = QrScannerWindow(on_back=self._show_hub)
             self.stack.addWidget(self._qr_window)
         self._switch_to(self._qr_window)
+
+    def _open_password_pdf(self):
+        if self._password_window is None:
+            from ui.password_pdf_window import PasswordPdfWindow
+            self._password_window = PasswordPdfWindow(on_back=self._show_hub)
+            self.stack.addWidget(self._password_window)
+        self._switch_to(self._password_window)
+
+    def _open_organize_pdf(self):
+        if self._organize_window is None:
+            from ui.organize_pdf_window import OrganizePdfWindow
+            self._organize_window = OrganizePdfWindow(on_back=self._show_hub)
+            self.stack.addWidget(self._organize_window)
+        self._switch_to(self._organize_window)
+
+    def _open_sign_pdf(self):
+        if self._sign_window is None:
+            from ui.sign_pdf_window import SignPdfWindow
+            self._sign_window = SignPdfWindow(on_back=self._show_hub)
+            self.stack.addWidget(self._sign_window)
+        self._switch_to(self._sign_window)
