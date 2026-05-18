@@ -26,6 +26,7 @@ wheels/
 # PyInstaller
 *.manifest
 *.spec
+!Imajin.spec
 
 # Inno Setup output
 installer/
