@@ -22,8 +22,8 @@ import requests
 from PyQt6.QtCore import QThread, pyqtSignal
 
 # ── Configure these before publishing ─────────────────────────────────
-GITHUB_OWNER = "YOUR_GITHUB_USERNAME"
-GITHUB_REPO  = "imajin"
+GITHUB_OWNER = "amiridlan"
+GITHUB_REPO = "imajin-image-compressor"
 # ──────────────────────────────────────────────────────────────────────
 
 _API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
@@ -35,15 +35,17 @@ def _parse_version(tag: str) -> tuple[int, ...]:
 
 
 class UpdateChecker(QThread):
-    update_available = pyqtSignal(str, str)   # latest_version, download_url
-    up_to_date       = pyqtSignal()
-    check_failed     = pyqtSignal()
+    update_available = pyqtSignal(str, str)  # latest_version, download_url
+    up_to_date = pyqtSignal()
+    check_failed = pyqtSignal()
 
     def run(self):
         try:
             from version import __version__
-            r = requests.get(_API_URL, timeout=8,
-                             headers={"Accept": "application/vnd.github+json"})
+
+            r = requests.get(
+                _API_URL, timeout=8, headers={"Accept": "application/vnd.github+json"}
+            )
             r.raise_for_status()
             data = r.json()
 
@@ -55,14 +57,16 @@ class UpdateChecker(QThread):
             if _parse_version(latest_tag) > _parse_version(__version__):
                 # Find the first .exe asset
                 asset = next(
-                    (a for a in data.get("assets", [])
-                     if a["name"].lower().endswith(".exe")),
-                    None
+                    (
+                        a
+                        for a in data.get("assets", [])
+                        if a["name"].lower().endswith(".exe")
+                    ),
+                    None,
                 )
                 if asset:
                     self.update_available.emit(
-                        latest_tag.lstrip("v"),
-                        asset["browser_download_url"]
+                        latest_tag.lstrip("v"), asset["browser_download_url"]
                     )
                     return
 
@@ -73,9 +77,9 @@ class UpdateChecker(QThread):
 
 
 class UpdateDownloader(QThread):
-    progress = pyqtSignal(int)   # 0–100
-    ready    = pyqtSignal(str)   # path to downloaded installer
-    error    = pyqtSignal(str)
+    progress = pyqtSignal(int)  # 0–100
+    ready = pyqtSignal(str)  # path to downloaded installer
+    error = pyqtSignal(str)
 
     def __init__(self, url: str, parent=None):
         super().__init__(parent)

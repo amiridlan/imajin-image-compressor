@@ -5,9 +5,9 @@
 
 #define AppName      "Imajin"
 #define AppVersion   "2.0.0"
-#define AppPublisher "Your Name"
+#define AppPublisher "Amir Idlan"
 #define AppExeName   "Imajin.exe"
-#define AppURL       "https://github.com/YOUR_GITHUB_USERNAME/imajin"
+#define AppURL       "https://github.com/amiridlan/imajin-image-compressor"
 
 [Setup]
 ; ── Identity ──────────────────────────────────────────────────────────
